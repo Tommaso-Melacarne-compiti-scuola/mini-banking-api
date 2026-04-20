@@ -37,3 +37,5 @@ CREATE TABLE transactions (
     balance_after DECIMAL(10, 2),
     FOREIGN KEY (account_id) REFERENCES accounts(id)
 );
+
+INSERT INTO accounts (owner_name, currency) VALUES ('Alice', 'EUR');
