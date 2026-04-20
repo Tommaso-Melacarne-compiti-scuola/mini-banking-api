@@ -30,7 +30,8 @@ $app = AppFactory::create();
 // Transactions
 $app->get('/accounts/{account_id}/transactions', [TransactionController::class, 'index']);
 $app->get('/accounts/{account_id}/transactions/{id}', [TransactionController::class, 'show']);
-$app->post('/accounts/{account_id}/transactions', [TransactionController::class, 'create']);
+$app->post('/accounts/{account_id}/deposits', [TransactionController::class, 'createDeposit']);
+$app->post('/accounts/{account_id}/withdrawals', [TransactionController::class, 'createWithdrawal']);
 $app->put('/accounts/{account_id}/transactions/{id}', [TransactionController::class, 'update']);
 $app->delete('/accounts/{account_id}/transactions/{id}', [TransactionController::class, 'delete']);
 

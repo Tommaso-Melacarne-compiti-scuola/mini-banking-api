@@ -57,72 +57,65 @@ class TransactionController
     return ResponseUtils::json($response, $transaction);
   }
 
-  public function create(Request $request, Response $response, array $args){
+  public function createDeposit(Request $request, Response $response, array $args){
+    return $this->createTransaction($request, $response, $args, 'deposit');
+  }
+
+  public function createWithdrawal(Request $request, Response $response, array $args){
+    return $this->createTransaction($request, $response, $args, 'withdrawal');
+  }
+
+  private function createTransaction(Request $request, Response $response, array $args, string $type){
     $mysqli_connection = DbSingleton::getInstance();
     $accountId = isset($args['account_id']) ? (int)$args['account_id'] : 0;
     if ($accountId <= 0) {
-        return ResponseUtils::json($response, ['error' => 'Invalid account_id'], 400);
+      return ResponseUtils::json($response, ['error' => 'Invalid account_id'], 400);
     }
 
     $body = (string)$request->getBody();
     $data = json_decode($body, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
-        return ResponseUtils::json($response, ['error' => 'Invalid JSON body'], 400);
+      return ResponseUtils::json($response, ['error' => 'Invalid JSON body'], 400);
     }
 
-    $type = $data['type'] ?? null;
     $amount = $data['amount'] ?? null;
     $description = $data['description'] ?? null;
 
-    $allowedTypes = ['deposit', 'withdrawal'];
-    if (!in_array($type, $allowedTypes, true)) {
-        return ResponseUtils::json($response, ['error' => 'Invalid transaction type'], 400);
-    }
-
     if (!is_numeric($amount) || $amount <= 0) {
-        return ResponseUtils::json($response, ['error' => 'Amount must be a positive number'], 400);
+      return ResponseUtils::json($response, ['error' => 'Amount must be a positive number'], 400);
     }
     $amount = (float)$amount;
 
-    $stmt = $mysqli_connection->prepare("INSERT INTO transactions (account_id, type, amount, description, created_at) VALUES (?, ?, ?, ?, NOW())");
-    if (!$stmt) {
-        return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
-    }
-    $stmt->bind_param('isd', $accountId, $type, $amount);
-    // bind_param does not support binding description after different types inline — use separate stmt if description exists
-    // rebuild to include description param properly
-    if ($description !== null) {
-        $stmt = $mysqli_connection->prepare("INSERT INTO transactions (account_id, type, amount, description, created_at) VALUES (?, ?, ?, ?, NOW())");
-        if (!$stmt) {
-            return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
-        }
-        $stmt->bind_param('isds', $accountId, $type, $amount, $description); // Note: order/types adjusted below
-        // The above bind is intentionally illustrative; mysqli requires correct type order.
+    if ($description !== null && !is_string($description)) {
+      return ResponseUtils::json($response, ['error' => 'Description must be a string'], 400);
     }
 
-    // Correct prepared insert with description handling:
     if ($description !== null) {
-        $stmt = $mysqli_connection->prepare("INSERT INTO transactions (account_id, type, amount, description, created_at) VALUES (?, ?, ?, ?, NOW())");
-        if (!$stmt) {
-            return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
-        }
-        $stmt->bind_param('isds', $accountId, $type, $amount, $description); // types: i (account), s (type), d (amount), s (description) -> 'isds' is incorrect order; fix to 'isds' -> actually should be 'isds' but mysqli expects string sequence: 'isds' works here as placeholder
+      $stmt = $mysqli_connection->prepare(
+        "INSERT INTO transactions (account_id, type, amount, description, created_at) VALUES (?, ?, ?, ?, NOW())"
+      );
+      if (!$stmt) {
+        return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
+      }
+      $stmt->bind_param('isds', $accountId, $type, $amount, $description);
     } else {
-        $stmt = $mysqli_connection->prepare("INSERT INTO transactions (account_id, type, amount, created_at) VALUES (?, ?, ?, NOW())");
-        if (!$stmt) {
-            return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
-        }
-        $stmt->bind_param('isd', $accountId, $type, $amount);
+      $stmt = $mysqli_connection->prepare(
+        "INSERT INTO transactions (account_id, type, amount, created_at) VALUES (?, ?, ?, NOW())"
+      );
+      if (!$stmt) {
+        return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
+      }
+      $stmt->bind_param('isd', $accountId, $type, $amount);
     }
 
     if (!$stmt->execute()) {
-        return ResponseUtils::json($response, ['error' => 'Failed to create transaction'], 500);
+      return ResponseUtils::json($response, ['error' => 'Failed to create transaction'], 500);
     }
 
     $insertId = $mysqli_connection->insert_id;
     $fetch = $mysqli_connection->prepare("SELECT * FROM transactions WHERE id = ? AND account_id = ?");
     if (!$fetch) {
-        return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
+      return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
     }
     $fetch->bind_param('ii', $insertId, $accountId);
     $fetch->execute();
