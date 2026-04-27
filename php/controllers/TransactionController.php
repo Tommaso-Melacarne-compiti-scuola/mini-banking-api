@@ -4,6 +4,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 require_once __DIR__ . '/../singleton/DbSingleton.php';
 require_once __DIR__ . '/../utils/ResponseUtils.php';
+require_once __DIR__ . '/../utils/BalanceUtils.php';
 
 class TransactionController
 {
@@ -94,13 +95,28 @@ class TransactionController
       return ResponseUtils::json($response, ['error' => 'Description must be a string'], 400);
     }
 
+    // Calculate current balance using shared utility
+    $currentBalance = BalanceUtils::calculateBalance($accountId);
+
+    // Calculate balance_after
+    $balanceAfter = $type === 'deposit' ? $currentBalance + $amount : $currentBalance - $amount;
+
+    // Validate withdrawal won't result in negative balance
+    if ($type === 'withdrawal' && $balanceAfter < 0) {
+      return ResponseUtils::json($response, [
+        'error' => 'Insufficient funds',
+        'current_balance' => $currentBalance,
+        'requested_amount' => $amount
+      ], 400);
+    }
+
     $stmt = $mysqli_connection->prepare(
-      "INSERT INTO transactions (account_id, type, amount, description, created_at) VALUES (?, ?, ?, ?, NOW())"
+      "INSERT INTO transactions (account_id, type, amount, description, balance_after, created_at) VALUES (?, ?, ?, ?, ?, NOW())"
     );
     if (!$stmt) {
       return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
     }
-    $stmt->bind_param('isds', $accountId, $type, $amount, $description);
+    $stmt->bind_param('isdsd', $accountId, $type, $amount, $description, $balanceAfter);
 
     if (!$stmt->execute()) {
       return ResponseUtils::json($response, ['error' => 'Failed to create transaction'], 500);
