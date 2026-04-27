@@ -105,10 +105,12 @@ class TransactionController
       return ResponseUtils::badRequest($response, 'Description must be a string');
     }
 
-    // Calculate current balance using shared utility
     $currentBalance = BalanceUtils::calculateBalance($accountId);
 
-    if ($type === 'withdrawal' && $currentBalance - $amount < 0) {
+    $newBalance = $type === 'deposit' ? $currentBalance + $amount : $currentBalance - $amount;
+
+    // Check for insufficient funds on withdrawal before creating the transaction
+    if ($type === 'withdrawal' && $newBalance < 0) {
       return ResponseUtils::badRequest($response, 'Insufficient funds');
     }
 
@@ -133,9 +135,6 @@ class TransactionController
     $fetch->execute();
     $res = $fetch->get_result();
     $created = $res ? $res->fetch_assoc() : null;
-
-    // Calculate new balance after transaction and include it in the response
-    $newBalance = $type === 'deposit' ? $currentBalance + $amount : $currentBalance - $amount;
 
     return ResponseUtils::json($response, $created ?: ['id' => $insertId, 'new_balance' => $newBalance], 201);
   }
