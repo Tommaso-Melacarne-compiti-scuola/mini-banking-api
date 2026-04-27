@@ -136,7 +136,7 @@ class TransactionController
     $res = $fetch->get_result();
     $created = $res ? $res->fetch_assoc() : null;
 
-    return ResponseUtils::json($response, $created ?: ['id' => $insertId, 'new_balance' => $newBalance], 201);
+    return ResponseUtils::created($response, $created ?: ['id' => $insertId, 'new_balance' => $newBalance]);
   }
 
   public function update(Request $request, Response $response, array $args){
@@ -206,6 +206,6 @@ class TransactionController
     }
 
     // Return 204 No Content to conform with typical REST delete semantics
-    return $response->withStatus(204);
+    return ResponseUtils::noContent($response);
   }
 }

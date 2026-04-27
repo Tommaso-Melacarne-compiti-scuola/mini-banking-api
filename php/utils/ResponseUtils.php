@@ -29,4 +29,14 @@ class ResponseUtils
     {
         return self::error($response, $message, 500);
     }
+
+    public static function created($response, $data)
+    {
+        return self::json($response, $data, 201);
+    }
+
+    public static function noContent($response)
+    {
+        return $response->withStatus(204);
+    }
 }
