@@ -37,7 +37,7 @@ class ExchangeRateUtils
             throw new InvalidArgumentException("Invalid currency code. Must be a 3-letter ISO code or common crypto symbol.");
         }
 
-        $url = "https://api.binance.com/api/v3/ticker/price?symbol={$fromCurrency}{$toCurrency}";
+        $url = "https://api.binance.com/api/v3/ticker/price?symbol={$toCurrency}{$fromCurrency}";
 
         $response = file_get_contents($url);
 
@@ -51,6 +51,8 @@ class ExchangeRateUtils
             throw new Exception("Invalid response from Binance API: " . $response);
         }
 
-        return (float)$data['price'];
+        $inverseConversionRate = (float)$data['price'];
+
+        return 1 / $inverseConversionRate;
     }
 }

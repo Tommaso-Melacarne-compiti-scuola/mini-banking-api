@@ -20,7 +20,7 @@ class BalanceConversionController
             return ResponseUtils::badRequest($response, $e->getMessage());
         }
 
-        $balance = BalanceController::calculateBalance($account_id);
+        $balance = BalanceUtils::calculateBalance($account_id);
 
         $queryParams = $request->getQueryParams();
         $toCurrency = $queryParams['to'] ?? null;
@@ -28,6 +28,8 @@ class BalanceConversionController
         if (!$toCurrency) {
             return ResponseUtils::badRequest($response, 'Missing "to" query parameter');
         }
+
+        $toCurrency = strtoupper($toCurrency);
 
         if (!preg_match('/^[A-Z]{3}$/', $toCurrency)) {
             return ResponseUtils::badRequest($response, 'Invalid currency code');
@@ -56,7 +58,7 @@ class BalanceConversionController
             return ResponseUtils::badRequest($response, $e->getMessage());
         }
 
-        $balance = BalanceController::calculateBalance($account_id);
+        $balance = BalanceUtils::calculateBalance($account_id);
 
         $queryParams = $request->getQueryParams();
         $toCurrency = $queryParams['to'] ?? null;
@@ -64,6 +66,8 @@ class BalanceConversionController
         if (!$toCurrency) {
             return ResponseUtils::badRequest($response, 'Missing "to" query parameter');
         }
+
+        $toCurrency = strtoupper($toCurrency);
 
         try {
             $exchangeRate = ExchangeRateUtils::getCryptoExchangeRate('EUR', $toCurrency);
