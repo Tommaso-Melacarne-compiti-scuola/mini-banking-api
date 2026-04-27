@@ -34,7 +34,6 @@ CREATE TABLE transactions (
     amount DECIMAL(10, 2) NOT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    balance_after DECIMAL(10, 2),
     FOREIGN KEY (account_id) REFERENCES accounts(id)
 );
 

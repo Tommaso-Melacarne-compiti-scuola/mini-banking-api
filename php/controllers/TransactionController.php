@@ -108,21 +108,17 @@ class TransactionController
     // Calculate current balance using shared utility
     $currentBalance = BalanceUtils::calculateBalance($accountId);
 
-    // Calculate balance_after
-    $balanceAfter = $type === 'deposit' ? $currentBalance + $amount : $currentBalance - $amount;
-
-    // Validate withdrawal won't result in negative balance
-    if ($type === 'withdrawal' && $balanceAfter < 0) {
+    if ($type === 'withdrawal' && $currentBalance - $amount < 0) {
       return ResponseUtils::badRequest($response, 'Insufficient funds');
     }
 
     $stmt = $mysqli_connection->prepare(
-      "INSERT INTO transactions (account_id, type, amount, description, balance_after, created_at) VALUES (?, ?, ?, ?, ?, NOW())"
+      "INSERT INTO transactions (account_id, type, amount, description, created_at) VALUES (?, ?, ?, ?, NOW())"
     );
     if (!$stmt) {
       return ResponseUtils::internalServerError($response, 'Database prepare failed');
     }
-    $stmt->bind_param('isdsd', $accountId, $type, $amount, $description, $balanceAfter);
+    $stmt->bind_param('isds', $accountId, $type, $amount, $description);
 
     if (!$stmt->execute()) {
       return ResponseUtils::internalServerError($response, 'Failed to create transaction');
@@ -138,7 +134,10 @@ class TransactionController
     $res = $fetch->get_result();
     $created = $res ? $res->fetch_assoc() : null;
 
-    return ResponseUtils::json($response, $created ?: ['id' => $insertId], 201);
+    // Calculate new balance after transaction and include it in the response
+    $newBalance = $type === 'deposit' ? $currentBalance + $amount : $currentBalance - $amount;
+
+    return ResponseUtils::json($response, $created ?: ['id' => $insertId, 'new_balance' => $newBalance], 201);
   }
 
   public function update(Request $request, Response $response, array $args){
