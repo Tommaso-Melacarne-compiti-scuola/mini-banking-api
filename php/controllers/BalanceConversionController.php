@@ -17,7 +17,7 @@ class BalanceConversionController
         try {
             $account_id = RequestUtils::getIntArg($args, 'account_id');
         } catch (InvalidArgumentException $e) {
-            return ResponseUtils::error($response, $e->getMessage(), 400);
+            return ResponseUtils::badRequest($response, $e->getMessage());
         }
 
         $balance = BalanceController::calculateBalance($account_id);
@@ -26,11 +26,11 @@ class BalanceConversionController
         $toCurrency = $queryParams['to'] ?? null;
 
         if (!$toCurrency) {
-            return ResponseUtils::error($response, 'Missing "to" query parameter', 400);
+            return ResponseUtils::badRequest($response, 'Missing "to" query parameter');
         }
 
         if (!preg_match('/^[A-Z]{3}$/', $toCurrency)) {
-            return ResponseUtils::error($response, 'Invalid currency code', 400);
+            return ResponseUtils::badRequest($response, 'Invalid currency code');
         }
 
         try {
@@ -44,7 +44,7 @@ class BalanceConversionController
                 'currency' => $toCurrency
             ]);
         } catch (Exception $e) {
-            return ResponseUtils::error($response, $e->getMessage(), 502);
+            return ResponseUtils::internalServerError($response, $e->getMessage());
         }
     }
 
@@ -53,7 +53,7 @@ class BalanceConversionController
         try {
             $account_id = RequestUtils::getIntArg($args, 'account_id');
         } catch (InvalidArgumentException $e) {
-            return ResponseUtils::error($response, $e->getMessage(), 400);
+            return ResponseUtils::badRequest($response, $e->getMessage());
         }
 
         $balance = BalanceController::calculateBalance($account_id);
@@ -62,7 +62,7 @@ class BalanceConversionController
         $toCurrency = $queryParams['to'] ?? null;
 
         if (!$toCurrency) {
-            return ResponseUtils::error($response, 'Missing "to" query parameter', 400);
+            return ResponseUtils::badRequest($response, 'Missing "to" query parameter');
         }
 
         try {
@@ -76,7 +76,7 @@ class BalanceConversionController
                 'currency' => $toCurrency
             ]);
         } catch (Exception $e) {
-            return ResponseUtils::error($response, $e->getMessage(), 502);
+            return ResponseUtils::internalServerError($response, $e->getMessage());
         }
     }
 }

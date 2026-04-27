@@ -13,7 +13,7 @@ class BalanceController
         try {
             $account_id = RequestUtils::getIntArg($args, 'account_id');
         } catch (InvalidArgumentException $e) {
-            return ResponseUtils::error($response, $e->getMessage(), 400);
+            return ResponseUtils::badRequest($response, $e->getMessage());
         }
 
         $balance = BalanceUtils::calculateBalance($account_id);

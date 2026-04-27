@@ -15,18 +15,18 @@ class TransactionController
     try {
         $accountId = RequestUtils::getIntArg($args, 'account_id');
     } catch (InvalidArgumentException $e) {
-        return ResponseUtils::error($response, $e->getMessage(), 400);
+        return ResponseUtils::badRequest($response, $e->getMessage());
     }
 
     $stmt = $mysqli_connection->prepare("SELECT * FROM transactions WHERE account_id = ?");
     if (!$stmt) {
-        return ResponseUtils::error($response, 'Database prepare failed', 502);
+        return ResponseUtils::internalServerError($response, 'Database prepare failed');
     }
     $stmt->bind_param('i', $accountId);
     $stmt->execute();
     $result = $stmt->get_result();
     if ($result === false) {
-        return ResponseUtils::error($response, 'Database query failed', 502);
+        return ResponseUtils::internalServerError($response, 'Database query failed');
     }
 
     $transactions = $result->fetch_all(MYSQLI_ASSOC);
@@ -40,27 +40,27 @@ class TransactionController
         $accountId = RequestUtils::getIntArg($args, 'account_id');
         $transactionId = RequestUtils::getIntArg($args, 'id');
     } catch (InvalidArgumentException $e) {
-        return ResponseUtils::error($response, $e->getMessage(), 400);
+        return ResponseUtils::badRequest($response, $e->getMessage());
     }
 
     if ($accountId <= 0 || $transactionId <= 0) {
-        return ResponseUtils::error($response, 'Invalid identifiers', 400);
+        return ResponseUtils::badRequest($response, 'Invalid identifiers');
     }
 
     $stmt = $mysqli_connection->prepare("SELECT * FROM transactions WHERE account_id = ? AND id = ?");
     if (!$stmt) {
-        return ResponseUtils::error($response, 'Database prepare failed', 502);
+        return ResponseUtils::internalServerError($response, 'Database prepare failed');
     }
     $stmt->bind_param('ii', $accountId, $transactionId);
     $stmt->execute();
     $result = $stmt->get_result();
     if ($result === false) {
-        return ResponseUtils::error($response, 'Database query failed', 502);
+        return ResponseUtils::internalServerError($response, 'Database query failed');
     }
 
     $transaction = $result->fetch_assoc();
     if (!$transaction) {
-        return ResponseUtils::error($response, 'Transaction not found', 404);
+        return ResponseUtils::notFound($response, 'Transaction not found');
     }
 
     return ResponseUtils::json($response, $transaction);
@@ -80,29 +80,29 @@ class TransactionController
     try {
         $accountId = RequestUtils::getIntArg($args, 'account_id');
     } catch (InvalidArgumentException $e) {
-        return ResponseUtils::error($response, $e->getMessage(), 400);
+        return ResponseUtils::badRequest($response, $e->getMessage());
     }
 
     $body = (string)$request->getBody();
     $data = json_decode($body, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
-      return ResponseUtils::error($response, 'Invalid JSON body', 400);
+      return ResponseUtils::badRequest($response, 'Invalid JSON body');
     }
 
     $amount = $data['amount'] ?? null;
     $description = $data['description'] ?? null;
 
     if (!is_numeric($amount) || $amount <= 0) {
-      return ResponseUtils::error($response, 'Amount must be a positive number', 400);
+      return ResponseUtils::badRequest($response, 'Amount must be a positive number');
     }
     $amount = (float)$amount;
 
     if ($description === null || (is_string($description) && trim($description) === '')) {
-      return ResponseUtils::error($response, 'Description cannot be null or empty', 400);
+      return ResponseUtils::badRequest($response, 'Description cannot be null or empty');
     }
 
     if (!is_string($description)) {
-      return ResponseUtils::error($response, 'Description must be a string', 400);
+      return ResponseUtils::badRequest($response, 'Description must be a string');
     }
 
     // Calculate current balance using shared utility
@@ -113,25 +113,25 @@ class TransactionController
 
     // Validate withdrawal won't result in negative balance
     if ($type === 'withdrawal' && $balanceAfter < 0) {
-      return ResponseUtils::error($response, 'Insufficient funds', 400);
+      return ResponseUtils::badRequest($response, 'Insufficient funds');
     }
 
     $stmt = $mysqli_connection->prepare(
       "INSERT INTO transactions (account_id, type, amount, description, balance_after, created_at) VALUES (?, ?, ?, ?, ?, NOW())"
     );
     if (!$stmt) {
-      return ResponseUtils::error($response, 'Database prepare failed', 502);
+      return ResponseUtils::internalServerError($response, 'Database prepare failed');
     }
     $stmt->bind_param('isdsd', $accountId, $type, $amount, $description, $balanceAfter);
 
     if (!$stmt->execute()) {
-      return ResponseUtils::error($response, 'Failed to create transaction', 500);
+      return ResponseUtils::internalServerError($response, 'Failed to create transaction');
     }
 
     $insertId = $mysqli_connection->insert_id;
     $fetch = $mysqli_connection->prepare("SELECT * FROM transactions WHERE id = ? AND account_id = ?");
     if (!$fetch) {
-      return ResponseUtils::error($response, 'Database prepare failed', 502);
+      return ResponseUtils::internalServerError($response, 'Database prepare failed');
     }
     $fetch->bind_param('ii', $insertId, $accountId);
     $fetch->execute();
@@ -148,33 +148,33 @@ class TransactionController
         $accountId = RequestUtils::getIntArg($args, 'account_id');
         $transactionId = RequestUtils::getIntArg($args, 'id');
     } catch (InvalidArgumentException $e) {
-        return ResponseUtils::error($response, $e->getMessage(), 400);
+        return ResponseUtils::badRequest($response, $e->getMessage());
     }
 
     $body = (string)$request->getBody();
     $data = json_decode($body, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
-        return ResponseUtils::error($response, 'Invalid JSON body', 400);
+        return ResponseUtils::badRequest($response, 'Invalid JSON body');
     }
 
     $description = $data['description'] ?? null;
     if ($description === null) {
-        return ResponseUtils::error($response, 'Description is required', 400);
+        return ResponseUtils::badRequest($response, 'Description is required');
     }
 
     $stmt = $mysqli_connection->prepare("UPDATE transactions SET description = ? WHERE account_id = ? AND id = ?");
     if (!$stmt) {
-        return ResponseUtils::error($response, 'Database prepare failed', 502);
+        return ResponseUtils::internalServerError($response, 'Database prepare failed');
     }
     $stmt->bind_param('sii', $description, $accountId, $transactionId);
     if (!$stmt->execute()) {
-        return ResponseUtils::error($response, 'Failed to update transaction', 500);
+        return ResponseUtils::internalServerError($response, 'Failed to update transaction');
     }
 
     // fetch updated
     $fetch = $mysqli_connection->prepare("SELECT * FROM transactions WHERE id = ? AND account_id = ?");
     if (!$fetch) {
-        return ResponseUtils::error($response, 'Database prepare failed', 502);
+        return ResponseUtils::internalServerError($response, 'Database prepare failed');
     }
     $fetch->bind_param('ii', $transactionId, $accountId);
     $fetch->execute();
@@ -186,25 +186,25 @@ class TransactionController
 
   public function delete(Request $request, Response $response, array $args){
     $mysqli_connection = DbSingleton::getInstance();
-    
+
     try {
         $accountId = RequestUtils::getIntArg($args, 'account_id');
         $transactionId = RequestUtils::getIntArg($args, 'id');
     } catch (InvalidArgumentException $e) {
-        return ResponseUtils::error($response, $e->getMessage(), 400);
+        return ResponseUtils::badRequest($response, $e->getMessage());
     }
 
     if ($accountId <= 0 || $transactionId <= 0) {
-        return ResponseUtils::error($response, 'Invalid identifiers', 400);
+        return ResponseUtils::badRequest($response, 'Invalid identifiers');
     }
 
     $stmt = $mysqli_connection->prepare("DELETE FROM transactions WHERE account_id = ? AND id = ?");
     if (!$stmt) {
-        return ResponseUtils::error($response, 'Database prepare failed', 502);
+        return ResponseUtils::internalServerError($response, 'Database prepare failed');
     }
     $stmt->bind_param('ii', $accountId, $transactionId);
     if (!$stmt->execute()) {
-        return ResponseUtils::error($response, 'Failed to delete transaction', 500);
+        return ResponseUtils::internalServerError($response, 'Failed to delete transaction');
     }
 
     // Return 204 No Content to conform with typical REST delete semantics
