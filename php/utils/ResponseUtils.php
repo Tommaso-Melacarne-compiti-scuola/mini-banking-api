@@ -9,4 +9,9 @@ class ResponseUtils
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($status);
     }
+
+    public static function error($response, string $message, int $status = 500)
+    {
+        return self::json($response, ['error' => $message], $status);
+    }
 }

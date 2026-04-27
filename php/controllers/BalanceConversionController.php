@@ -5,6 +5,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 require_once __DIR__ . '/BalanceController.php';
 require_once __DIR__ . '/../utils/ExchangeRateUtils.php';
 require_once __DIR__ . '/../utils/ResponseUtils.php';
+require_once __DIR__ . '/../utils/RequestUtils.php';
 
 class BalanceConversionController
 {
@@ -13,15 +14,23 @@ class BalanceConversionController
     // GET /accounts/1/balance/convert/crypto?to=BTC per convertire il saldo in una criptovaluta
     public function convertToFiat(Request $request, Response $response, array $args)
     {
-        $account_id = (int)$args['account_id'];
-    
+        try {
+            $account_id = RequestUtils::getIntArg($args, 'account_id');
+        } catch (InvalidArgumentException $e) {
+            return ResponseUtils::error($response, $e->getMessage(), 400);
+        }
+
         $balance = BalanceController::calculateBalance($account_id);
 
         $queryParams = $request->getQueryParams();
         $toCurrency = $queryParams['to'] ?? null;
 
         if (!$toCurrency) {
-            return ResponseUtils::json($response, ['error' => 'Missing "to" query parameter'], 400);
+            return ResponseUtils::error($response, 'Missing "to" query parameter', 400);
+        }
+
+        if (!preg_match('/^[A-Z]{3}$/', $toCurrency)) {
+            return ResponseUtils::error($response, 'Invalid currency code', 400);
         }
 
         try {
@@ -35,21 +44,25 @@ class BalanceConversionController
                 'currency' => $toCurrency
             ]);
         } catch (Exception $e) {
-            return ResponseUtils::json($response, ['error' => $e->getMessage()], 502);
+            return ResponseUtils::error($response, $e->getMessage(), 502);
         }
     }
 
     public function convertToCrypto(Request $request, Response $response, array $args)
     {
-        $account_id = (int)$args['account_id'];
-    
+        try {
+            $account_id = RequestUtils::getIntArg($args, 'account_id');
+        } catch (InvalidArgumentException $e) {
+            return ResponseUtils::error($response, $e->getMessage(), 400);
+        }
+
         $balance = BalanceController::calculateBalance($account_id);
 
         $queryParams = $request->getQueryParams();
         $toCurrency = $queryParams['to'] ?? null;
 
         if (!$toCurrency) {
-            return ResponseUtils::json($response, ['error' => 'Missing "to" query parameter'], 400);
+            return ResponseUtils::error($response, 'Missing "to" query parameter', 400);
         }
 
         try {
@@ -63,7 +76,7 @@ class BalanceConversionController
                 'currency' => $toCurrency
             ]);
         } catch (Exception $e) {
-            return ResponseUtils::json($response, ['error' => $e->getMessage()], 502);
+            return ResponseUtils::error($response, $e->getMessage(), 502);
         }
     }
 }
