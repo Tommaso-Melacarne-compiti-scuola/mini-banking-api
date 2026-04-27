@@ -20,13 +20,16 @@ class BalanceController
         $stmt->bind_param('i', $account_id);
         $stmt->execute();
         $result = $stmt->get_result();
-        return (float)($result['balance'] ?? 0);
+        $row = $result ? $result->fetch_assoc() : null;
+        $stmt->close();
+
+        return (float)($row['balance'] ?? 0);
     }
 
     public function index(Request $request, Response $response, array $args){
         $account_id = (int)$args['account_id'];
 
-        $balance = $this->calculateBalance($account_id);
+        $balance = self::calculateBalance($account_id);
 
         return ResponseUtils::json($response, [
             'account_id' => $account_id,

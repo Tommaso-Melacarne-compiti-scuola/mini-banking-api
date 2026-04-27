@@ -36,7 +36,7 @@ $app->put('/accounts/{account_id}/transactions/{id}', [TransactionController::cl
 $app->delete('/accounts/{account_id}/transactions/{id}', [TransactionController::class, 'delete']);
 
 // Balance
-$app->get('/accounts/{account_id}/balance', [BalanceController::class, 'balance']);
+$app->get('/accounts/{account_id}/balance', [BalanceController::class, 'index']);
 
 // Balance conversion
 $app->get('/accounts/{account_id}/balance/convert/fiat', [BalanceConversionController::class, 'convertToFiat']);

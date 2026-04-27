@@ -86,27 +86,21 @@ class TransactionController
     }
     $amount = (float)$amount;
 
-    if ($description !== null && !is_string($description)) {
+    if ($description === null || (is_string($description) && trim($description) === '')) {
+      return ResponseUtils::json($response, ['error' => 'Description cannot be null or empty'], 400);
+    }
+
+    if (!is_string($description)) {
       return ResponseUtils::json($response, ['error' => 'Description must be a string'], 400);
     }
 
-    if ($description !== null) {
-      $stmt = $mysqli_connection->prepare(
-        "INSERT INTO transactions (account_id, type, amount, description, created_at) VALUES (?, ?, ?, ?, NOW())"
-      );
-      if (!$stmt) {
-        return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
-      }
-      $stmt->bind_param('isds', $accountId, $type, $amount, $description);
-    } else {
-      $stmt = $mysqli_connection->prepare(
-        "INSERT INTO transactions (account_id, type, amount, created_at) VALUES (?, ?, ?, NOW())"
-      );
-      if (!$stmt) {
-        return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
-      }
-      $stmt->bind_param('isd', $accountId, $type, $amount);
+    $stmt = $mysqli_connection->prepare(
+      "INSERT INTO transactions (account_id, type, amount, description, created_at) VALUES (?, ?, ?, ?, NOW())"
+    );
+    if (!$stmt) {
+      return ResponseUtils::json($response, ['error' => 'Database prepare failed'], 502);
     }
+    $stmt->bind_param('isds', $accountId, $type, $amount, $description);
 
     if (!$stmt->execute()) {
       return ResponseUtils::json($response, ['error' => 'Failed to create transaction'], 500);
