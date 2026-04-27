@@ -28,19 +28,19 @@ $app = AppFactory::create();
 // Potete scegliere nomi leggermente diversi per gli endpoint, ma la struttura deve rimanere chiara e coerente.
 
 // Transactions
-$app->get('/accounts/{account_id}/transactions', [TransactionController::class, 'index']);
-$app->get('/accounts/{account_id}/transactions/{id}', [TransactionController::class, 'show']);
-$app->post('/accounts/{account_id}/deposits', [TransactionController::class, 'createDeposit']);
-$app->post('/accounts/{account_id}/withdrawals', [TransactionController::class, 'createWithdrawal']);
-$app->put('/accounts/{account_id}/transactions/{id}', [TransactionController::class, 'update']);
-$app->delete('/accounts/{account_id}/transactions/{id}', [TransactionController::class, 'delete']);
+$app->get('/accounts/{account_id:[0-9]+}/transactions', [TransactionController::class, 'index']);
+$app->get('/accounts/{account_id:[0-9]+}/transactions/{id:[0-9]+}', [TransactionController::class, 'show']);
+$app->post('/accounts/{account_id:[0-9]+}/deposits', [TransactionController::class, 'createDeposit']);
+$app->post('/accounts/{account_id:[0-9]+}/withdrawals', [TransactionController::class, 'createWithdrawal']);
+$app->put('/accounts/{account_id:[0-9]+}/transactions/{id:[0-9]+}', [TransactionController::class, 'update']);
+$app->delete('/accounts/{account_id:[0-9]+}/transactions/{id:[0-9]+}', [TransactionController::class, 'delete']);
 
 // Balance
-$app->get('/accounts/{account_id}/balance', [BalanceController::class, 'index']);
+$app->get('/accounts/{account_id:[0-9]+}/balance', [BalanceController::class, 'index']);
 
 // Balance conversion
-$app->get('/accounts/{account_id}/balance/convert/fiat', [BalanceConversionController::class, 'convertToFiat']);
-$app->get('/accounts/{account_id}/balance/convert/crypto', [BalanceConversionController::class, 'convertToCrypto']);
+$app->get('/accounts/{account_id:[0-9]+}/balance/convert/fiat', [BalanceConversionController::class, 'convertToFiat']);
+$app->get('/accounts/{account_id:[0-9]+}/balance/convert/crypto', [BalanceConversionController::class, 'convertToCrypto']);
 
 $notFoundHandler = function (Request $request, Response $response, array $args) {
     $response->getBody()->write('404 - Not Found');
