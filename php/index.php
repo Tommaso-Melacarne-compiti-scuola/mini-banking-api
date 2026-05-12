@@ -5,14 +5,21 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/controllers/AccountsController.php';
 require_once __DIR__ . '/controllers/TransactionController.php';
 require_once __DIR__ . '/controllers/BalanceController.php';
 require_once __DIR__ . '/controllers/BalanceConversionController.php';
 
 $app = AppFactory::create();
 
+// Accounts
+$app->get('/accounts', [AccountsController::class, 'index']);
+$app->get('/accounts/{account_id:[0-9]+}', [AccountsController::class, 'show']);
 
 // Endpoint richiesti
+// Accounts
+// GET /accounts per ottenere l'elenco degli account
+// GET /accounts/1 per ottenere i dettagli di un account
 // Movimenti
 // GET /accounts/1/transactions per ottenere l'elenco dei movimenti
 // GET /accounts/1/transactions/5 per ottenere il dettaglio di un movimento
